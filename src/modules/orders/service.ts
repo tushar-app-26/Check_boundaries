@@ -44,10 +44,11 @@
 
 
 
+
 import { orders, type Order } from "./repo.ts";
 import { reserve, hasSku } from "../inventory/index.ts";
 import { charge } from "../payments/index.ts";
-import { send } from "../notifications/index.ts";
+import { eventBus } from "../../platform/event-bus.ts";
 
 export type PlaceResult =
   | { ok: true; orderId: string; amountPaise: number }
@@ -85,6 +86,7 @@ export function placeOrder({
   }
 
   const id = `ord_${++n}`;
+
   orders().set(id, {
     id,
     sku,
@@ -93,7 +95,11 @@ export function placeOrder({
     chargeId: c.chargeId,
   });
 
-  send(email, `Order ${id} confirmed`);
+  eventBus.publish("order.placed", {
+    orderId: id,
+    email,
+    amountPaise,
+  });
 
   return { ok: true, orderId: id, amountPaise };
 }
