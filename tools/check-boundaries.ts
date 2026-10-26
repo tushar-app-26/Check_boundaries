@@ -60,6 +60,7 @@ export function findViolations(root: string): Violation[] {
 
     for (const match of source.matchAll(importPattern)) {
       const importPath = match[1];
+      if (!importPath) continue;
 
       // Package imports do not cross our local module boundaries.
       if (!importPath.startsWith(".")) continue;

@@ -4,6 +4,10 @@ export type ReserveResult =
   | { ok: true; remaining: number }
   | { ok: false; reason: "unknown_sku" | "out_of_stock" };
 
+  export function hasSku(sku: string): boolean {
+  return stock().has(sku);
+}
+
 export function reserve(sku: string, qty: number): ReserveResult {
   const row = stock().get(sku);
   if (!row) return { ok: false, reason: "unknown_sku" };
