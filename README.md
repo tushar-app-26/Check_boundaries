@@ -1,34 +1,81 @@
-# The day task — make the boundaries real
+# Shop — Real Module Boundaries
 
-A working four-module shop. It does what it should; it just breaks every
-rule from Part 3 of the deck while doing it.
+A small four-module shop application built with TypeScript and Node.js. This project demonstrates how to enforce module boundaries while preserving existing application behaviour.
 
-TypeScript, and no dependencies. Node 22.18 or later runs `.ts` files
-directly, so there is nothing to install and nothing to build.
+## Modules
 
-```
-node src/app.ts     # see it work
-node --test         # boundaries + event-bus fail, flow passes
-```
+- **Orders** — places orders and coordinates inventory and payment operations.
+- **Inventory** — manages stock availability and reservations.
+- **Payments** — handles payment operations.
+- **Notifications** — handles order confirmation messages by subscribing to domain events.
 
-Type-checking is optional and is the only thing that wants an install:
+Shared infrastructure lives under `src/platform`.
 
-```
-npm i -D typescript @types/node
+## Requirements
+
+- Node.js 22.18 or later
+- TypeScript files run directly using Node.js; no build step is required.
+- Type-checking is optional and requires TypeScript and Node.js type definitions.
+
+Optional type-checking setup:
+
+```bash
+npm install -D typescript @types/node
 npx tsc --noEmit
 ```
 
-| File | State now |
-|---|---|
-| `test/flow.test.ts` | **green** — keep it green, behaviour must not change |
-| `test/boundaries.test.ts` | red — you write the checker, then fix what it finds |
-| `test/event-bus.test.ts` | red — you finish the bus |
+## Run the application
 
-The violations are all in `src/modules/orders/service.ts` and each is
-marked with a comment. Delete the comments as you fix them.
+From the project root:
 
-One thing TypeScript makes easier to get wrong: a `import type { ... }`
-across a module boundary still couples the two modules. Your checker
-should catch those too, and one test checks that it does.
+```bash
+node src/app.ts
+```
 
-Write your extraction plan in `EXTRACTION-PLAN.md`.
+## Run tests
+
+Run the complete test suite:
+
+```bash
+node --test
+```
+
+Check module boundaries:
+
+```bash
+node tools/check-boundaries.ts
+```
+
+The boundary checker reports violations when a module imports another module's private implementation instead of its public API.
+
+## Module boundary rules
+
+A module may import:
+
+1. Its own internal files.
+2. Shared infrastructure from `src/platform`.
+3. Another module through that module's `index.ts` public API.
+
+A module must not import another module's private service or repository files. Type-only imports across module boundaries are also subject to these rules.
+
+## Event-driven notifications
+
+Orders publishes an `order.placed` event after successfully placing an order. Notifications subscribes to that event and sends the confirmation.
+
+The event bus:
+
+- Supports multiple subscribers.
+- Continues processing when a handler throws.
+- Returns the number of handlers reached by `publish()`.
+- Supports unsubscribe callbacks.
+- Allows the same handler to be subscribed more than once.
+
+Orders does not directly import or call the notifications module.
+
+## Extraction plan
+
+See [`EXTRACTION-PLAN.md`](./EXTRACTION-PLAN.md) for the proposed notifications extraction, data ownership, network timeout risks, migration steps, and stop criteria.
+
+## Behaviour preservation
+
+The existing flow tests must continue to pass. The objective is to improve module boundaries and event handling without changing observable shop behaviour.
